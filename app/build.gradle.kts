@@ -84,4 +84,7 @@ dependencies {
     // Glance (Widget)
     implementation("androidx.glance:glance-appwidget:1.0.0")
     implementation("androidx.glance:glance-material3:1.0.0")
+    
+    // Reorderable list
+    implementation("sh.calvin.reorderable:reorderable:2.4.3")
 }

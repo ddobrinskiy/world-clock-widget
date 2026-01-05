@@ -56,4 +56,21 @@ class TimezonePreferences(private val context: Context) {
             preferences[TIMEZONES_KEY] = updated.joinToString(SEPARATOR)
         }
     }
+
+    suspend fun reorderTimezones(fromIndex: Int, toIndex: Int) {
+        context.dataStore.edit { preferences ->
+            val current = preferences[TIMEZONES_KEY] ?: ""
+            val list = if (current.isEmpty()) {
+                mutableListOf("America/New_York", "Europe/London", "Asia/Tokyo", "Australia/Sydney")
+            } else {
+                current.split(SEPARATOR).toMutableList()
+            }
+            
+            if (fromIndex in list.indices && toIndex in list.indices) {
+                val item = list.removeAt(fromIndex)
+                list.add(toIndex, item)
+                preferences[TIMEZONES_KEY] = list.joinToString(SEPARATOR)
+            }
+        }
+    }
 }

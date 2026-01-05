@@ -1,5 +1,9 @@
 # World Clock Widget - Android
 
+<p align="center">
+  <img src="assets/icon.png" alt="World Clock Widget Icon" width="128" height="128">
+</p>
+
 A minimalistic Android app for tracking time across multiple timezones with home screen widgets.
 
 ## Features

@@ -36,6 +36,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
     
+    fun reorderTimezones(fromIndex: Int, toIndex: Int) {
+        viewModelScope.launch {
+            preferences.reorderTimezones(fromIndex, toIndex)
+            updateWidget()
+        }
+    }
+    
     private suspend fun updateWidget() {
         WorldClockWidget().updateAll(getApplication())
     }
