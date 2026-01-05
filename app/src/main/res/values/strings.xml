@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">World Clock</string>
+    <string name="add_timezone">Add timezone</string>
+    <string name="search_timezones">Search timezones</string>
+    <string name="no_timezones">No timezones added</string>
+    <string name="tap_plus_to_add">Tap + to add a timezone</string>
+    <string name="widget_name">World Clock Widget</string>
+    <string name="widget_description">Display multiple time zones</string>
+    <string name="utc_offset">UTC%s</string>
+</resources>
