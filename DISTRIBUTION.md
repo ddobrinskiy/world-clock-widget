@@ -49,17 +49,165 @@ $ANDROID_HOME/platform-tools/adb install app/build/outputs/apk/debug/app-debug.a
 
 Share with others via GitHub without going through an app store.
 
-### Setup
-
-1. Create a GitHub repository for this project
-2. Build a signed release APK (see [Signing](#signing-your-apk) below)
-3. Create a GitHub Release and attach the APK
-
 ### Benefits
 - Version history
 - Release notes
 - Easy sharing via direct download links
 - No approval process
+
+### Semantic Versioning (SemVer)
+
+Use **MAJOR.MINOR.PATCH** format for version numbers:
+
+```
+v1.2.3
+│ │ └── PATCH: Bug fixes, small tweaks (backwards compatible)
+│ └──── MINOR: New features (backwards compatible)
+└────── MAJOR: Breaking changes
+```
+
+**Examples:**
+| Change | Before | After | Why |
+|--------|--------|-------|-----|
+| Fix widget crash | v1.0.0 | v1.0.1 | Bug fix → PATCH |
+| Add home timezone feature | v1.0.1 | v1.1.0 | New feature → MINOR |
+| Redesign entire app | v1.1.0 | v2.0.0 | Breaking change → MAJOR |
+
+**Rules:**
+- Always use 3 numbers: `v1.0.0` not `v1.0`
+- Reset PATCH to 0 when bumping MINOR
+- Reset MINOR and PATCH to 0 when bumping MAJOR
+- Pre-release: `v1.0.0-beta.1`, `v1.0.0-rc.1`
+
+### Creating Releases with GitHub CLI
+
+Install GitHub CLI if needed:
+```bash
+brew install gh
+gh auth login
+```
+
+#### Tag and Release in One Command
+
+```bash
+# Create a new version tag
+git tag -a v1.2.0 -m "Release v1.2.0 - Description"
+git push origin v1.2.0
+
+# Create GitHub release from the tag
+gh release create v1.2.0 \
+  --title "v1.2.0 - Feature Name" \
+  --notes "## What's New
+
+- 🏠 New feature description
+- 🐛 Bug fix description
+- 📱 Improvement description"
+```
+
+#### With Release Notes from File
+
+```bash
+# Create release notes file
+cat > release-notes.md << 'EOF'
+## What's New
+
+### Features
+- 🏠 Home timezone support
+- 🔄 Drag-to-reorder timezones
+
+### Fixes
+- 🐛 Fixed widget update timing
+
+### Improvements
+- 📱 Better widget sizing
+EOF
+
+# Create release with notes from file
+gh release create v1.2.0 \
+  --title "v1.2.0 - Home Timezone" \
+  --notes-file release-notes.md
+```
+
+#### Attach APK to Release
+
+```bash
+# Build release APK first
+./gradlew assembleRelease
+
+# Create release with APK attached
+gh release create v1.2.0 \
+  --title "v1.2.0 - Home Timezone" \
+  --notes "Release notes here" \
+  app/build/outputs/apk/release/app-release-unsigned.apk
+```
+
+#### Other Useful Commands
+
+```bash
+# List all releases
+gh release list
+
+# View a specific release
+gh release view v1.2.0
+
+# Delete a release (keeps the tag)
+gh release delete v1.2.0
+
+# Delete a tag
+git tag -d v1.2.0
+git push origin --delete v1.2.0
+
+# Edit an existing release
+gh release edit v1.2.0 --notes "Updated notes"
+```
+
+### Updating Version in Code
+
+When releasing, update these in `app/build.gradle.kts`:
+
+```kotlin
+android {
+    defaultConfig {
+        versionCode = 3           // Increment by 1 each release
+        versionName = "1.2.0"     // SemVer format
+    }
+}
+```
+
+**versionCode vs versionName:**
+- `versionCode`: Integer, must increment each release (used by Android/Play Store)
+- `versionName`: Human-readable string (what users see)
+
+### Complete Release Workflow
+
+```bash
+# 1. Update version in app/build.gradle.kts
+#    versionCode = 3
+#    versionName = "1.2.0"
+
+# 2. Commit the version bump
+git add -A
+git commit -m "Release v1.2.0
+
+- New feature X
+- Bug fix Y"
+
+# 3. Create and push tag
+git tag -a v1.2.0 -m "Release v1.2.0"
+git push origin main
+git push origin v1.2.0
+
+# 4. Build release APK
+./gradlew assembleRelease
+
+# 5. Create GitHub release
+gh release create v1.2.0 \
+  --title "v1.2.0 - Feature Name" \
+  --notes "## What's New
+- Feature X
+- Bug fix Y" \
+  app/build/outputs/apk/release/app-release-unsigned.apk
+```
 
 ---
 
