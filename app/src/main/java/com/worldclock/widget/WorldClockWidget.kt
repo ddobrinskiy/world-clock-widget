@@ -4,11 +4,13 @@ import android.content.Context
 import android.content.Intent
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.glance.*
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
+import androidx.glance.appwidget.SizeMode
 import androidx.glance.appwidget.action.actionStartActivity
 import androidx.glance.appwidget.provideContent
 import androidx.glance.layout.*
@@ -24,6 +26,21 @@ import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 
 class WorldClockWidget : GlanceAppWidget() {
+
+    companion object {
+        // Define size breakpoints for responsive widget
+        private val TINY = DpSize(180.dp, 80.dp)
+        private val SMALL = DpSize(180.dp, 150.dp)
+        private val MEDIUM = DpSize(180.dp, 250.dp)
+        private val LARGE = DpSize(180.dp, 350.dp)
+        private val EXTRA_LARGE = DpSize(180.dp, 500.dp)
+        private val HUGE = DpSize(180.dp, 700.dp)
+    }
+
+    // Use responsive size mode to re-render at different sizes
+    override val sizeMode = SizeMode.Responsive(
+        setOf(TINY, SMALL, MEDIUM, LARGE, EXTRA_LARGE, HUGE)
+    )
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         val preferences = TimezonePreferences(context)
@@ -134,8 +151,13 @@ class WorldClockWidget : GlanceAppWidget() {
     }
 
     private fun calculateMaxTimezones(height: androidx.compose.ui.unit.Dp): Int {
-        val availableHeight = height.value - 60
-        val rowHeight = 44
-        return (availableHeight / rowHeight).toInt().coerceAtLeast(2)
+        // Header "World Clock" takes ~44dp (16sp text + 12dp bottom padding + margin)
+        // Each timezone row takes ~44dp (city name 14sp + offset 12sp + spacer 8dp)
+        val headerHeight = 44f
+        val rowHeight = 44f
+        val availableHeight = height.value - headerHeight
+        val maxItems = (availableHeight / rowHeight).toInt()
+        // Show at least 2, but scale up with available space
+        return maxItems.coerceIn(2, 12)
     }
 }

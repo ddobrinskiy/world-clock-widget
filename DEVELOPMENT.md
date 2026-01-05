@@ -63,7 +63,7 @@ $ANDROID_HOME/platform-tools/adb shell am start -n com.worldclock/.MainActivity
 **Take screenshot (via adb):**
 ```bash
 $ANDROID_HOME/platform-tools/adb shell screencap -p /sdcard/screenshot.png
-$ANDROID_HOME/platform-tools/adb pull /sdcard/screenshot.png /tmp/android_screenshot.png
+$ANDROID_HOME/platform-tools/adb pull /sdcard/screenshot.png ~/Downloads/android_screenshot_$(date +%Y%m%d_%H%M%S).png
 ```
 
 **View logs:**
@@ -176,19 +176,22 @@ export ANDROID_HOME="$HOME/Library/Android/sdk"
 2. **Build after every change**
 3. **Test every change visually**
 4. **Use screenshots to verify UI**
-5. **Check logs for errors**
-6. **Document what was tested**
-7. **Only proceed when current step is verified**
+5. **Save all screenshots to `~/Downloads` with timestamps** (e.g., `screenshot_20260105_143052.png`)
+6. **Check logs for errors**
+7. **Document what was tested**
+8. **Only proceed when current step is verified**
 
 ---
 
 ## 📸 Screenshot-Based Verification
 
+**Important:** Always save screenshots to `~/Downloads` with timestamps in the filename (e.g., `android_screenshot_20260105_143052.png`).
+
 When verifying UI changes:
 
 1. Launch the app on emulator
 2. Navigate to the affected screen
-3. Take a screenshot using computer-use MCP
+3. Take a screenshot using computer-use MCP (save to `~/Downloads`)
 4. Visually confirm the change appears correctly
 5. If the change involves interaction:
    - Click the element
