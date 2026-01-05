@@ -130,38 +130,49 @@ gh release create v1.2.0 \
 
 #### Build and Attach APK to Release
 
-**Build the release APK:**
+**⚠️ Important: APKs must be signed to install on devices!**
+
+Unsigned APKs (`app-release-unsigned.apk`) will fail with "App not installed as package appears to be invalid". Use one of these options:
+
+**Option 1: Use debug APK (simplest, signed with debug key)**
 
 ```bash
-# Build release APK (unsigned, but works for sideloading)
-./gradlew assembleRelease
+# Build debug APK (automatically signed)
+./gradlew assembleDebug
 
-# Output location:
-# app/build/outputs/apk/release/app-release-unsigned.apk
-```
+# Rename with version for release
+cp app/build/outputs/apk/debug/app-debug.apk world-clock-v1.2.0.apk
 
-**Option A: Create new release with APK attached:**
-
-```bash
+# Upload to release
 gh release create v1.2.0 \
   --title "v1.2.0 - Feature Name" \
   --notes "Release notes here" \
-  app/build/outputs/apk/release/app-release-unsigned.apk
+  world-clock-v1.2.0.apk
 ```
 
-**Option B: Upload APK to existing release:**
+**Option 2: Sign release APK (recommended for production)**
+
+See [Signing Your APK](#-signing-your-apk) section below, then:
+
+```bash
+# Build signed release APK
+export KEYSTORE_PASSWORD="your_password"
+export KEY_PASSWORD="your_password"
+./gradlew assembleRelease
+
+# Rename and upload
+cp app/build/outputs/apk/release/app-release.apk world-clock-v1.2.0.apk
+gh release create v1.2.0 \
+  --title "v1.2.0 - Feature Name" \
+  --notes "Release notes here" \
+  world-clock-v1.2.0.apk
+```
+
+**Upload to existing release:**
 
 ```bash
 # Upload (or replace) APK on existing release
-gh release upload v1.2.0 app/build/outputs/apk/release/app-release-unsigned.apk --clobber
-```
-
-**Option C: Upload with custom filename:**
-
-```bash
-# Rename APK for cleaner download name
-cp app/build/outputs/apk/release/app-release-unsigned.apk world-clock-v1.2.0.apk
-gh release upload v1.2.0 world-clock-v1.2.0.apk
+gh release upload v1.2.0 world-clock-v1.2.0.apk --clobber
 ```
 
 **Verify APK was uploaded:**
@@ -169,6 +180,11 @@ gh release upload v1.2.0 world-clock-v1.2.0.apk
 ```bash
 gh release view v1.2.0
 ```
+
+**APK Naming Convention:**
+- Use format: `{app-name}-v{version}.apk`
+- Example: `world-clock-v1.2.0.apk`
+- Never upload `app-debug.apk` or `app-release-unsigned.apk` directly
 
 #### Other Useful Commands
 
@@ -226,8 +242,9 @@ git tag -a v1.2.0 -m "Release v1.2.0"
 git push origin main
 git push origin v1.2.0
 
-# 4. Build release APK
-./gradlew assembleRelease
+# 4. Build SIGNED APK (use debug for simplicity, or signed release)
+./gradlew assembleDebug
+cp app/build/outputs/apk/debug/app-debug.apk world-clock-v1.2.0.apk
 
 # 5. Create GitHub release with APK
 gh release create v1.2.0 \
@@ -235,9 +252,10 @@ gh release create v1.2.0 \
   --notes "## What's New
 - Feature X
 - Bug fix Y" \
-  app/build/outputs/apk/release/app-release-unsigned.apk
+  world-clock-v1.2.0.apk
 
-# 6. Verify release has APK attached
+# 6. Cleanup and verify
+rm world-clock-v1.2.0.apk
 gh release view v1.2.0
 ```
 
@@ -246,11 +264,13 @@ gh release view v1.2.0
 If you forgot to attach the APK when creating the release:
 
 ```bash
-# Build APK if not already built
-./gradlew assembleRelease
+# Build signed APK
+./gradlew assembleDebug
+cp app/build/outputs/apk/debug/app-debug.apk world-clock-v1.2.0.apk
 
 # Upload to existing release (--clobber replaces if exists)
-gh release upload v1.2.0 app/build/outputs/apk/release/app-release-unsigned.apk --clobber
+gh release upload v1.2.0 world-clock-v1.2.0.apk --clobber
+rm world-clock-v1.2.0.apk
 ```
 
 ---
