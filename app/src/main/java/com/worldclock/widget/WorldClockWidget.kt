@@ -45,14 +45,15 @@ class WorldClockWidget : GlanceAppWidget() {
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         val preferences = TimezonePreferences(context)
         val timezones = preferences.timezones.first()
+        val homeTimezone = preferences.homeTimezone.first()
 
         provideContent {
-            WorldClockWidgetContent(timezones)
+            WorldClockWidgetContent(timezones, homeTimezone)
         }
     }
 
     @Composable
-    private fun WorldClockWidgetContent(timezones: List<String>) {
+    private fun WorldClockWidgetContent(timezones: List<String>, homeTimezone: String?) {
         val size = LocalSize.current
 
         val intent = Intent(LocalContext.current, MainActivity::class.java)
@@ -87,7 +88,7 @@ class WorldClockWidget : GlanceAppWidget() {
                 val maxTimezones = calculateMaxTimezones(size.height)
                 
                 timezones.take(maxTimezones).forEach { zoneId ->
-                    TimezoneRow(zoneId)
+                    TimezoneRow(zoneId, isHome = zoneId == homeTimezone)
                     Spacer(modifier = GlanceModifier.height(8.dp))
                 }
 
@@ -106,12 +107,21 @@ class WorldClockWidget : GlanceAppWidget() {
     }
 
     @Composable
-    private fun TimezoneRow(zoneId: String) {
+    private fun TimezoneRow(zoneId: String, isHome: Boolean = false) {
         val zone = ZoneId.of(zoneId)
         val now = ZonedDateTime.now(zone)
         val timeFormatter = DateTimeFormatter.ofPattern("HH:mm")
         val offset = now.offset.toString()
         val formattedOffset = if (offset == "Z") "UTC+00:00" else "UTC$offset"
+        
+        // Accent color for home timezone
+        val accentColor = ColorProvider(Color(0xFF6B9FFF)) // Light blue accent
+        val textColor = if (isHome) accentColor else GlanceTheme.colors.onBackground
+        val cityName = if (isHome) {
+            "🏠 ${zoneId.substringAfterLast("/").replace("_", " ")}"
+        } else {
+            zoneId.substringAfterLast("/").replace("_", " ")
+        }
         
         Row(
             modifier = GlanceModifier.fillMaxWidth(),
@@ -122,11 +132,11 @@ class WorldClockWidget : GlanceAppWidget() {
                 modifier = GlanceModifier.defaultWeight()
             ) {
                 Text(
-                    text = zoneId.substringAfterLast("/").replace("_", " "),
+                    text = cityName,
                     style = TextStyle(
                         fontSize = 14.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = GlanceTheme.colors.onBackground
+                        fontWeight = if (isHome) FontWeight.Bold else FontWeight.Medium,
+                        color = textColor
                     )
                 )
                 Spacer(modifier = GlanceModifier.height(2.dp))
@@ -134,7 +144,7 @@ class WorldClockWidget : GlanceAppWidget() {
                     text = formattedOffset,
                     style = TextStyle(
                         fontSize = 12.sp,
-                        color = ColorProvider(Color.Gray)
+                        color = if (isHome) accentColor else ColorProvider(Color.Gray)
                     )
                 )
             }
@@ -143,8 +153,8 @@ class WorldClockWidget : GlanceAppWidget() {
                 text = now.format(timeFormatter),
                 style = TextStyle(
                     fontSize = 24.sp,
-                    fontWeight = FontWeight.Normal,
-                    color = GlanceTheme.colors.onBackground
+                    fontWeight = if (isHome) FontWeight.Bold else FontWeight.Normal,
+                    color = textColor
                 )
             )
         }
