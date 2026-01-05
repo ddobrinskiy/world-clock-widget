@@ -70,6 +70,7 @@ fun WorldClockApp(viewModel: MainViewModel = viewModel()) {
 @Composable
 fun MainScreen(viewModel: MainViewModel, onAddClick: () -> Unit) {
     val timezones by viewModel.timezones.collectAsState()
+    val homeTimezone by viewModel.homeTimezone.collectAsState()
     var refreshKey by remember { mutableStateOf(0) }
     val hapticFeedback = LocalHapticFeedback.current
     
@@ -125,10 +126,12 @@ fun MainScreen(viewModel: MainViewModel, onAddClick: () -> Unit) {
         ) {
             items(localTimezones, key = { it }) { zoneId ->
                 ReorderableItem(reorderableLazyListState, key = zoneId) { isDragging ->
-                    key(refreshKey, zoneId) {
+                    key(refreshKey, zoneId, homeTimezone) {
                         TimezoneCard(
                             zoneId = zoneId,
+                            isHome = zoneId == homeTimezone,
                             onDelete = { viewModel.removeTimezone(zoneId) },
+                            onSetHome = { viewModel.setHomeTimezone(zoneId) },
                             isDragging = isDragging,
                             dragModifier = Modifier.draggableHandle(
                                 onDragStarted = {
@@ -149,8 +152,10 @@ fun MainScreen(viewModel: MainViewModel, onAddClick: () -> Unit) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TimezoneCard(
-    zoneId: String, 
+    zoneId: String,
+    isHome: Boolean = false,
     onDelete: () -> Unit,
+    onSetHome: () -> Unit,
     isDragging: Boolean = false,
     dragModifier: Modifier = Modifier
 ) {
@@ -164,40 +169,75 @@ fun TimezoneCard(
     
     val dismissState = rememberDismissState(
         confirmValueChange = { value ->
-            if (value == DismissValue.DismissedToStart) {
-                onDelete()
-                true
-            } else {
-                false
+            when (value) {
+                DismissValue.DismissedToStart -> {
+                    onDelete()
+                    true
+                }
+                DismissValue.DismissedToEnd -> {
+                    onSetHome()
+                    false // Don't actually dismiss, just trigger the action
+                }
+                else -> false
             }
         }
     )
     
     SwipeToDismiss(
         state = dismissState,
-        directions = setOf(DismissDirection.EndToStart),
+        directions = setOf(DismissDirection.EndToStart, DismissDirection.StartToEnd),
         background = {
+            val direction = dismissState.dismissDirection
+            val backgroundColor = when (direction) {
+                DismissDirection.EndToStart -> MaterialTheme.colorScheme.errorContainer
+                DismissDirection.StartToEnd -> MaterialTheme.colorScheme.primaryContainer
+                else -> MaterialTheme.colorScheme.surface
+            }
+            val contentAlignment = when (direction) {
+                DismissDirection.EndToStart -> Alignment.CenterEnd
+                DismissDirection.StartToEnd -> Alignment.CenterStart
+                else -> Alignment.Center
+            }
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(
-                        color = MaterialTheme.colorScheme.errorContainer,
+                        color = backgroundColor,
                         shape = RoundedCornerShape(12.dp)
                     ),
-                contentAlignment = Alignment.CenterEnd
+                contentAlignment = contentAlignment
             ) {
-                Icon(
-                    imageVector = Icons.Default.Delete,
-                    contentDescription = "Delete",
-                    modifier = Modifier.padding(end = 16.dp),
-                    tint = MaterialTheme.colorScheme.onErrorContainer
-                )
+                when (direction) {
+                    DismissDirection.EndToStart -> {
+                        Icon(
+                            imageVector = Icons.Default.Delete,
+                            contentDescription = "Delete",
+                            modifier = Modifier.padding(end = 16.dp),
+                            tint = MaterialTheme.colorScheme.onErrorContainer
+                        )
+                    }
+                    DismissDirection.StartToEnd -> {
+                        Text(
+                            text = "🏠",
+                            modifier = Modifier.padding(start = 16.dp),
+                            style = MaterialTheme.typography.headlineMedium
+                        )
+                    }
+                    else -> {}
+                }
             }
         },
         dismissContent = {
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                elevation = CardDefaults.cardElevation(defaultElevation = elevation)
+                elevation = CardDefaults.cardElevation(defaultElevation = elevation),
+                colors = if (isHome) {
+                    CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer
+                    )
+                } else {
+                    CardDefaults.cardColors()
+                }
             ) {
                 Row(
                     modifier = Modifier
@@ -206,20 +246,33 @@ fun TimezoneCard(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = zoneId.substringAfterLast("/").replace("_", " "),
-                            style = MaterialTheme.typography.titleMedium
-                        )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            if (isHome) {
+                                Text(
+                                    text = "🏠 ",
+                                    style = MaterialTheme.typography.titleMedium
+                                )
+                            }
+                            Text(
+                                text = zoneId.substringAfterLast("/").replace("_", " "),
+                                style = MaterialTheme.typography.titleMedium,
+                                color = if (isHome) MaterialTheme.colorScheme.onPrimaryContainer 
+                                       else MaterialTheme.colorScheme.onSurface
+                            )
+                        }
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
                             text = formattedOffset,
                             style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = if (isHome) MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                                   else MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
                             text = now.format(timeFormatter),
-                            style = MaterialTheme.typography.headlineLarge
+                            style = MaterialTheme.typography.headlineLarge,
+                            color = if (isHome) MaterialTheme.colorScheme.onPrimaryContainer 
+                                   else MaterialTheme.colorScheme.onSurface
                         )
                     }
                     IconButton(
@@ -229,7 +282,8 @@ fun TimezoneCard(
                         Icon(
                             imageVector = Icons.Rounded.DragHandle,
                             contentDescription = "Drag to reorder",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            tint = if (isHome) MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                                  else MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }

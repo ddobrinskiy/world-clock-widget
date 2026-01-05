@@ -22,6 +22,20 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             initialValue = emptyList()
         )
     
+    val homeTimezone: StateFlow<String?> = preferences.homeTimezone
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = null
+        )
+    
+    fun setHomeTimezone(zoneId: String) {
+        viewModelScope.launch {
+            preferences.setHomeTimezone(zoneId)
+            updateWidget()
+        }
+    }
+    
     fun addTimezone(zoneId: String) {
         viewModelScope.launch {
             preferences.addTimezone(zoneId)

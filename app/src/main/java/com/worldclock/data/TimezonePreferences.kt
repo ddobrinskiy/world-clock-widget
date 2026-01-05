@@ -15,7 +15,12 @@ class TimezonePreferences(private val context: Context) {
     
     companion object {
         private val TIMEZONES_KEY = stringPreferencesKey("selected_timezones")
+        private val HOME_TIMEZONE_KEY = stringPreferencesKey("home_timezone")
         private const val SEPARATOR = "|||"
+    }
+
+    val homeTimezone: Flow<String?> = context.dataStore.data.map { preferences ->
+        preferences[HOME_TIMEZONE_KEY]
     }
 
     val timezones: Flow<List<String>> = context.dataStore.data.map { preferences ->
@@ -70,6 +75,22 @@ class TimezonePreferences(private val context: Context) {
                 val item = list.removeAt(fromIndex)
                 list.add(toIndex, item)
                 preferences[TIMEZONES_KEY] = list.joinToString(SEPARATOR)
+            }
+        }
+    }
+
+    suspend fun setHomeTimezone(zoneId: String?) {
+        context.dataStore.edit { preferences ->
+            if (zoneId == null) {
+                preferences.remove(HOME_TIMEZONE_KEY)
+            } else {
+                // Toggle: if already home, unset it; otherwise set it
+                val current = preferences[HOME_TIMEZONE_KEY]
+                if (current == zoneId) {
+                    preferences.remove(HOME_TIMEZONE_KEY)
+                } else {
+                    preferences[HOME_TIMEZONE_KEY] = zoneId
+                }
             }
         }
     }

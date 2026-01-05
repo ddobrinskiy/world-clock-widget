@@ -29,6 +29,13 @@ This checklist covers all features that should be tested before each release.
 - [ ] Release and verify new order is saved
 - [ ] Restart app and verify order persists
 
+### Home Timezone
+- [ ] Swipe right on a card → card becomes home (accented color + 🏠 emoji)
+- [ ] Swipe right on home card again → card reverts to normal
+- [ ] Swipe right on different card while another is home → new card becomes home (only one home at a time)
+- [ ] Verify home status persists after app restart
+- [ ] Verify 🏠 emoji appears to the left of city name
+
 ### Time Display
 - [ ] Verify times update automatically every minute
 - [ ] Verify times are accurate for each timezone
