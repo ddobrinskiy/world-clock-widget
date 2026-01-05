@@ -128,17 +128,46 @@ gh release create v1.2.0 \
   --notes-file release-notes.md
 ```
 
-#### Attach APK to Release
+#### Build and Attach APK to Release
+
+**Build the release APK:**
 
 ```bash
-# Build release APK first
+# Build release APK (unsigned, but works for sideloading)
 ./gradlew assembleRelease
 
-# Create release with APK attached
+# Output location:
+# app/build/outputs/apk/release/app-release-unsigned.apk
+```
+
+**Option A: Create new release with APK attached:**
+
+```bash
 gh release create v1.2.0 \
-  --title "v1.2.0 - Home Timezone" \
+  --title "v1.2.0 - Feature Name" \
   --notes "Release notes here" \
   app/build/outputs/apk/release/app-release-unsigned.apk
+```
+
+**Option B: Upload APK to existing release:**
+
+```bash
+# Upload (or replace) APK on existing release
+gh release upload v1.2.0 app/build/outputs/apk/release/app-release-unsigned.apk --clobber
+```
+
+**Option C: Upload with custom filename:**
+
+```bash
+# Rename APK for cleaner download name
+cp app/build/outputs/apk/release/app-release-unsigned.apk world-clock-v1.2.0.apk
+gh release upload v1.2.0 world-clock-v1.2.0.apk
+```
+
+**Verify APK was uploaded:**
+
+```bash
+gh release view v1.2.0
 ```
 
 #### Other Useful Commands
@@ -200,13 +229,28 @@ git push origin v1.2.0
 # 4. Build release APK
 ./gradlew assembleRelease
 
-# 5. Create GitHub release
+# 5. Create GitHub release with APK
 gh release create v1.2.0 \
   --title "v1.2.0 - Feature Name" \
   --notes "## What's New
 - Feature X
 - Bug fix Y" \
   app/build/outputs/apk/release/app-release-unsigned.apk
+
+# 6. Verify release has APK attached
+gh release view v1.2.0
+```
+
+### Adding APK to Existing Release
+
+If you forgot to attach the APK when creating the release:
+
+```bash
+# Build APK if not already built
+./gradlew assembleRelease
+
+# Upload to existing release (--clobber replaces if exists)
+gh release upload v1.2.0 app/build/outputs/apk/release/app-release-unsigned.apk --clobber
 ```
 
 ---
