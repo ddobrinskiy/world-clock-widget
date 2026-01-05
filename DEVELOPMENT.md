@@ -221,6 +221,272 @@ $ANDROID_HOME/platform-tools/adb logcat -d | grep -E "(FATAL|Exception|Error)" |
 
 ---
 
+## 🧪 Testing Examples
+
+### Example 1: Testing UI Changes (Adding a Button)
+
+```bash
+# 1. Build and install
+./gradlew assembleDebug
+$ANDROID_HOME/platform-tools/adb install -r app/build/outputs/apk/debug/app-debug.apk
+
+# 2. Launch the app
+$ANDROID_HOME/platform-tools/adb shell am start -n com.worldclock/.MainActivity
+
+# 3. Wait for app to load
+sleep 2
+
+# 4. Take screenshot to verify button appears
+$ANDROID_HOME/platform-tools/adb shell screencap -p /sdcard/screenshot.png
+$ANDROID_HOME/platform-tools/adb pull /sdcard/screenshot.png ~/Downloads/android_screenshot_$(date +%Y%m%d_%H%M%S).png
+```
+
+### Example 2: Testing Tap Interactions
+
+```bash
+# Tap at specific coordinates (x=350, y=500)
+$ANDROID_HOME/platform-tools/adb shell input tap 350 500
+
+# Take screenshot after tap
+sleep 1
+$ANDROID_HOME/platform-tools/adb shell screencap -p /sdcard/screenshot.png
+$ANDROID_HOME/platform-tools/adb pull /sdcard/screenshot.png ~/Downloads/after_tap.png
+```
+
+### Example 3: Testing Drag-to-Reorder
+
+```bash
+# Long press and drag from (x1,y1) to (x2,y2) over 2 seconds
+$ANDROID_HOME/platform-tools/adb shell input swipe 350 740 350 290 2000
+```
+
+### Example 4: Testing Swipe-to-Delete
+
+```bash
+# Swipe from right to left on an item
+$ANDROID_HOME/platform-tools/adb shell input swipe 600 300 100 300 300
+```
+
+### Example 5: Testing Widget Updates
+
+```bash
+# Force widget update by opening the app
+$ANDROID_HOME/platform-tools/adb shell am start -n com.worldclock/.MainActivity
+
+# Go to home screen to see widget
+$ANDROID_HOME/platform-tools/adb shell input keyevent KEYCODE_HOME
+sleep 1
+
+# Screenshot the home screen with widget
+$ANDROID_HOME/platform-tools/adb shell screencap -p /sdcard/screenshot.png
+$ANDROID_HOME/platform-tools/adb pull /sdcard/screenshot.png ~/Downloads/widget_screenshot.png
+```
+
+### Example 6: Waiting and Verifying Time Updates
+
+```bash
+# Check current time, wait, then verify widget updated
+echo "Time before: $(date)"
+sleep 60
+echo "Time after: $(date)"
+
+$ANDROID_HOME/platform-tools/adb shell screencap -p /sdcard/screenshot.png
+$ANDROID_HOME/platform-tools/adb pull /sdcard/screenshot.png ~/Downloads/time_check.png
+```
+
+---
+
+## 💻 Command Reference
+
+### App Lifecycle
+
+```bash
+# Install app
+$ANDROID_HOME/platform-tools/adb install -r app/build/outputs/apk/debug/app-debug.apk
+
+# Launch app
+$ANDROID_HOME/platform-tools/adb shell am start -n com.worldclock/.MainActivity
+
+# Force stop app
+$ANDROID_HOME/platform-tools/adb shell am force-stop com.worldclock
+
+# Uninstall app
+$ANDROID_HOME/platform-tools/adb uninstall com.worldclock
+
+# Clear app data
+$ANDROID_HOME/platform-tools/adb shell pm clear com.worldclock
+```
+
+### Input Events
+
+```bash
+# Tap at coordinates
+$ANDROID_HOME/platform-tools/adb shell input tap <x> <y>
+
+# Swipe (duration in ms)
+$ANDROID_HOME/platform-tools/adb shell input swipe <x1> <y1> <x2> <y2> <duration_ms>
+
+# Press back button
+$ANDROID_HOME/platform-tools/adb shell input keyevent KEYCODE_BACK
+
+# Press home button
+$ANDROID_HOME/platform-tools/adb shell input keyevent KEYCODE_HOME
+
+# Type text
+$ANDROID_HOME/platform-tools/adb shell input text "hello"
+```
+
+### Debugging
+
+```bash
+# View all logs
+$ANDROID_HOME/platform-tools/adb logcat
+
+# Filter by app
+$ANDROID_HOME/platform-tools/adb logcat | grep -i worldclock
+
+# View crash logs
+$ANDROID_HOME/platform-tools/adb logcat -d | grep -E "(FATAL|Exception|Error)" | tail -30
+
+# Clear logcat buffer
+$ANDROID_HOME/platform-tools/adb logcat -c
+```
+
+### Device Info
+
+```bash
+# List connected devices
+$ANDROID_HOME/platform-tools/adb devices
+
+# Get screen resolution
+$ANDROID_HOME/platform-tools/adb shell wm size
+
+# Get screen density
+$ANDROID_HOME/platform-tools/adb shell wm density
+```
+
+---
+
+## 🏛️ Architecture Decisions
+
+### 1. Jetpack Compose for UI
+
+**Decision:** Use Jetpack Compose instead of XML layouts.
+
+**Rationale:**
+- Modern, declarative UI framework
+- Better state management
+- Less boilerplate code
+- Easier to maintain and test
+
+### 2. Jetpack Glance for Widgets
+
+**Decision:** Use Glance for app widget instead of RemoteViews.
+
+**Rationale:**
+- Compose-like API for widgets
+- Easier to share logic with main app
+- More maintainable than XML-based RemoteViews
+- Material 3 theming support
+
+### 3. DataStore for Persistence
+
+**Decision:** Use DataStore Preferences instead of SharedPreferences.
+
+**Rationale:**
+- Type-safe
+- Async by default (no ANR risk)
+- Kotlin coroutines integration
+- Better error handling
+
+**Data Format:**
+```
+Timezones stored as: "America/New_York,Europe/London,Asia/Tokyo"
+Separator: ","
+```
+
+### 4. AlarmManager for Widget Updates
+
+**Decision:** Use AlarmManager instead of WorkManager for minute-by-minute updates.
+
+**Rationale:**
+- WorkManager minimum interval is 15 minutes
+- AlarmManager allows exact minute-by-minute scheduling
+- Uses `setExactAndAllowWhileIdle` for precision
+- Falls back to inexact alarms if permission not granted
+
+**Trade-offs:**
+- Requires `SCHEDULE_EXACT_ALARM` permission on Android 12+
+- Inexact fallback may have 1-2 minute delay
+
+### 5. Reorderable Library (sh.calvin.reorderable)
+
+**Decision:** Use external library for drag-to-reorder instead of custom implementation.
+
+**Rationale:**
+- Battle-tested gesture handling
+- Proper integration with LazyColumn
+- Haptic feedback support
+- Clean API with `Modifier.draggableHandle()`
+
+### 6. MVVM Architecture
+
+**Structure:**
+```
+MainActivity.kt       - UI layer (Composables)
+MainViewModel.kt      - Business logic, state management
+TimezonePreferences.kt - Data layer (DataStore)
+WorldClockWidget.kt   - Widget UI (Glance)
+WorldClockWidgetReceiver.kt - Widget updates (AlarmManager)
+```
+
+**Data Flow:**
+```
+User Action → ViewModel → DataStore → StateFlow → UI Update
+                      ↘ Widget.updateAll() → Widget Refresh
+```
+
+### 7. Single Activity Architecture
+
+**Decision:** Use single Activity with Jetpack Navigation Compose.
+
+**Rationale:**
+- Simpler navigation
+- Shared ViewModel across screens
+- Better state preservation
+- Modern Android best practice
+
+---
+
+## 📁 Project Structure
+
+```
+app/src/main/
+├── java/com/worldclock/
+│   ├── MainActivity.kt          # Main app UI
+│   ├── MainViewModel.kt         # App state & logic
+│   ├── data/
+│   │   └── TimezonePreferences.kt  # DataStore persistence
+│   ├── ui/
+│   │   ├── TimezonePickerScreen.kt # Add timezone screen
+│   │   └── theme/
+│   │       └── Theme.kt         # Material 3 theming
+│   └── widget/
+│       ├── WorldClockWidget.kt  # Widget UI (Glance)
+│       └── WorldClockWidgetReceiver.kt # Widget receiver
+├── res/
+│   ├── layout/                  # (minimal, Compose-based)
+│   ├── values/
+│   │   ├── strings.xml
+│   │   ├── colors.xml
+│   │   └── themes.xml
+│   └── xml/
+│       └── world_clock_widget_info.xml  # Widget metadata
+└── AndroidManifest.xml
+```
+
+---
+
 ## 📝 Summary
 
 The development workflow is designed for **autonomous AI development** with minimal human intervention:
@@ -232,4 +498,3 @@ The development workflow is designed for **autonomous AI development** with mini
 5. **REPEAT** — Move to next change only after verification
 
 This iterative approach ensures quality, reduces debugging time, and allows the AI to work independently with confidence.
-
